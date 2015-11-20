@@ -39,7 +39,7 @@ def setup_databases(con, cursor):
                     venue_id VARCHAR(32),\
                     FOREIGN KEY (venue_id) REFERENCES Venues(id) ON DELETE CASCADE,\
                     created BIGINT,\
-                    id INT PRIMARY KEY,\
+                    id VARCHAR(32) PRIMARY KEY,\
                     mtime BIGINT,\
                     response VARCHAR(8),\
                     member_id INT,\
@@ -60,39 +60,48 @@ def write_rsvps(con, cursor):
         for file_name in zip_file.namelist():
 
                 data = zip_file.read(file_name)
-                data = json.loads(data)
+                rsvps = json.loads(data)
 
-                for rsvps in data:
+                for rsvp in rsvps:
 
                     # Todo Tallies?!
 
                     # Update member
-                    member = rsvps["member"]
+                    member = rsvp["member"]
                     cursor.execute("INSERT INTO Members(name, id) SELECT %s,%s WHERE NOT EXISTS (SELECT id FROM Members WHERE id=%s)", (member["name"], int(member["member_id"]), member["member_id"]))
 
                     # Update group
-                    group = rsvps["group"]
+                    group = rsvp["group"]
                     cursor.execute("INSERT INTO Groups(urlname, lon, id, lat, join_mode) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Groups WHERE id=%s)", (group["urlname"], group["group_lon"], group["id"], group["group_lat"], group["join_mode"], group["id"]))
 
                     # Update venue
-                    if "venue" in rsvps:
-                        venue = rsvps["venue"]
+                    if "venue" in rsvp:
+                        venue = rsvp["venue"]
                         if not "zip" in venue:
                             venue["zip"] = None
                         if not "state" in venue:
                             venue["state"] = None
                         cursor.execute("INSERT INTO Venues(city, name, zip, repinned, lon, state, address_1, country, lat, id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Venues WHERE id=%s)", (venue["city"], venue["name"], venue["zip"], venue["repinned"], venue["lon"], venue["state"], venue["address_1"], venue["country"], venue["lat"], str(venue["id"]), str(venue["id"])))
+                    else:
+                        venue = {"id": None}
 
                     # Update photo
-                    if "member_photo" in rsvps:
-                        photo = rsvps["member_photo"]
+                    if "member_photo" in rsvp:
+                        photo = rsvp["member_photo"]
                         if not "highres_link" in photo:
                             photo["highres_link"] = ""
                         cursor.execute("INSERT INTO Photos(thumb_link, id, photo_link, highres_link) SELECT %s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Photos WHERE id=%s)", (photo["thumb_link"], photo["photo_id"], photo["photo_link"], photo["highres_link"], photo["photo_id"]))
+                    else:
+                        photo = {"photo_id": None}
 
                     # Update event
-                    event = rsvps["event"]
+                    event = rsvp["event"]
                     cursor.execute("INSERT INTO Events(event_url, id, name, time) SELECT %s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Events WHERE id=%s)", (event["event_url"], event["id"], event["name"], event["time"], event["id"]))
+
+                    # Insert RSVPS
+                    if not "guest" in rsvp:
+                        rsvp["guest"] = None
+                    cursor.execute("INSERT INTO RSVPS(group_id, venue_id, created, id, mtime, response, member_id, guest, photo_id, event_id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM RSVPS WHERE id=%s)", (group["id"], venue["id"], rsvp["created"], rsvp["rsvp_id"], rsvp["mtime"], rsvp["response"], member["member_id"], rsvp["guest"], photo["photo_id"], event["id"], str(rsvp["rsvp_id"])))
 
                 con.commit()
 
