@@ -81,6 +81,10 @@ def write_rsvps(con, cursor):
                             venue["zip"] = None
                         if not "state" in venue:
                             venue["state"] = None
+                        if not "city" in venue:
+                            venue["city"] = None
+                        if not "name" in venue:
+                            venue["name"] = None
                         cursor.execute("INSERT INTO Venues(city, name, zip, repinned, lon, state, address_1, country, lat, id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Venues WHERE id=%s)", (venue["city"], venue["name"], venue["zip"], venue["repinned"], venue["lon"], venue["state"], venue["address_1"], venue["country"], venue["lat"], str(venue["id"]), str(venue["id"])))
                     else:
                         venue = {"id": None}
@@ -111,7 +115,7 @@ if __name__ == "__main__":
         con = psycopg2.connect(database=config.db, user=config.user, password=config.password, host=config.host)
         cursor = con.cursor()
 
-        setup_databases(con, cursor)
+        #setup_databases(con, cursor)
         write_rsvps(con, cursor)
 
     except psycopg2.DatabaseError, e:
