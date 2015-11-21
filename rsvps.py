@@ -55,7 +55,14 @@ def setup_databases(con, cursor):
 
 def write_rsvps(con, cursor):
 
+    counter = 1;
+    file_count = len(os.listdir('./data/rsvps/'))
+
     for zip_files in os.listdir('./data/rsvps/'):
+
+        print "Inserting file " + str(counter) + " of " + str(file_count) + " files..."
+        counter += 1
+
         zip_file = zipfile.ZipFile('./data/rsvps/' + zip_files)
         for file_name in zip_file.namelist():
 
@@ -77,14 +84,11 @@ def write_rsvps(con, cursor):
                     # Update venue
                     if "venue" in rsvp:
                         venue = rsvp["venue"]
-                        if not "zip" in venue:
-                            venue["zip"] = None
-                        if not "state" in venue:
-                            venue["state"] = None
-                        if not "city" in venue:
-                            venue["city"] = None
-                        if not "name" in venue:
-                            venue["name"] = None
+
+                        for attribute in ["zip", "state", "city", "name", "address_1", "country"]:
+                            if not attribute in venue:
+                                venue[attribute] = None
+
                         cursor.execute("INSERT INTO Venues(city, name, zip, repinned, lon, state, address_1, country, lat, id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Venues WHERE id=%s)", (venue["city"], venue["name"], venue["zip"], venue["repinned"], venue["lon"], venue["state"], venue["address_1"], venue["country"], venue["lat"], str(venue["id"]), str(venue["id"])))
                     else:
                         venue = {"id": None}
