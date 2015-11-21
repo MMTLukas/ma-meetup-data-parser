@@ -8,25 +8,14 @@ import config
 
 def setup_database(con, cursor):
 
-    cursor.execute("DROP TABLE IF EXISTS Photos")
+    cursor.execute("DROP TABLE IF EXISTS Photos CASCADE")
     cursor.execute("DROP TABLE IF EXISTS Groups_Topics")
-    cursor.execute("DROP TABLE IF EXISTS Groups")
+    cursor.execute("DROP TABLE IF EXISTS Groups CASCADE")
     cursor.execute("DROP TABLE IF EXISTS Categories")
-    cursor.execute("DROP TABLE IF EXISTS Members")
-    cursor.execute("DROP TABLE IF EXISTS Topics")
 
     cursor.execute("CREATE TABLE Categories(\
                     id INT PRIMARY KEY,\
                     shortname VARCHAR(32),\
-                    name VARCHAR(127)\
-                   )")
-    cursor.execute("CREATE TABLE Members(\
-                    id INT PRIMARY KEY,\
-                    name VARCHAR(64)\
-                   )")
-    cursor.execute("CREATE TABLE Topics(\
-                    id INT PRIMARY KEY,\
-                    urlkey VARCHAR(64),\
                     name VARCHAR(127)\
                    )")
     cursor.execute("CREATE TABLE Groups( \
@@ -71,7 +60,14 @@ def setup_database(con, cursor):
 
 def write_categories(con, cursor):
 
+    counter = 1;
+    file_count = len(os.listdir('./data/categories_and_groups/'))
+
     for file_name in os.listdir('./data/categories_and_groups/'):
+
+        print "Inserting file " + str(counter) + " of " + str(file_count) + " files..."
+        counter += 1
+
         with open('./data/categories_and_groups/' + str(file_name)) as data_file:
             data = json.load(data_file)
 
