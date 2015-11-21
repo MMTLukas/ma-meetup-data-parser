@@ -1,0 +1,60 @@
+### Reihenfolge der auszuführenden Import-Scripts
+
+1. members.py
+2. categories.py
+3. rsvps.py
+
+### Hier die Daten für die config.py
+
+```python
+db = 'meetup-data'
+user = 'meetup-user'
+password = ''
+host = 'localhost'(edited)
+```
+
+### Nützliche Befehle
+
+__Services__
+
+```
+psql => PostgreSQL Interface
+postgresql => PostgreSQL Service
+postgres => User zum Erstellen von Usern/Datenbanken/etc.
+```
+
+__Befehle__
+```
+\du => Rollen auflisten
+\q => Quit
+```
+
+Datenbank löschen
+```
+DROP DATABASE meetup_data;
+```
+
+Rolle löschen
+```
+DROP USER "admin";
+```
+
+Als Superuser einloggen
+```
+sudo -u postgres psql
+```
+
+User erstellen
+```
+sudo -u postgres createuser --login meetup-user
+```
+
+Datenbank erstellen
+```
+sudo -u postgres createdb --owner=meetup-user meetup-data
+```
+
+Einloggen als ersteller User in die erstelle Datenbank, -h localhost damit das Passwort berücksichtigt wird und kein PEER-Login getätigt wird, welcher Failen würde
+```
+psql -U meetup-user meetup-data -h localhost
+```
