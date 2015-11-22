@@ -2,7 +2,8 @@
 
 1. members.py
 2. categories.py
-3. rsvps.py
+3. events.ps
+4. rsvps.py
 
 ### Hier die Daten für die config.py
 
