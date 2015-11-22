@@ -81,6 +81,18 @@ def write_rsvps(con, cursor):
                             venue["zip"] = None
                         if not "state" in venue:
                             venue["state"] = None
+                        if not "city" in venue:
+                            venue["city"] = None
+                        if not "name" in venue:
+                            venue["name"] = None
+                        if not "address_1" in venue:
+                            venue["address_1"] = None
+                        if not "country" in venue:
+                            venue["country"] = None
+                        if not "lat" in venue:
+                            venue["lat"] = None
+                        if not "id" in venue:
+                            venue["id"] = None
                         cursor.execute("INSERT INTO Venues(city, name, zip, repinned, lon, state, address_1, country, lat, id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Venues WHERE id=%s)", (venue["city"], venue["name"], venue["zip"], venue["repinned"], venue["lon"], venue["state"], venue["address_1"], venue["country"], venue["lat"], str(venue["id"]), str(venue["id"])))
                     else:
                         venue = {"id": None}
