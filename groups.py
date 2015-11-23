@@ -53,7 +53,7 @@ def setup_database(con, cursor):
 
     con.commit()
 
-def write_categories(con, cursor):
+def write_groups(con, cursor):
 
     counter = 1;
     file_count = len(os.listdir('./data/categories_and_groups/'))
@@ -98,13 +98,7 @@ def write_categories(con, cursor):
                     cursor.execute("INSERT INTO Topics(id, urlkey, name) SELECT %s,%s,%s WHERE NOT EXISTS (SELECT id FROM Topics WHERE id=%s)", (topic["id"], topic["urlkey"], topic["name"], topic["id"]))
                     cursor.execute("INSERT INTO Groups_Topics(group_id, topic_id) VALUES(%s, %s)", (group["id"], topic["id"]))
 
-                # Update photos
-                # if "group_photo" in group:
-                #     group_photo_id = group["group_photo"]["photo_id"]
-                #     cursor.execute("INSERT INTO Photos(thumb_link, id, photo_link, highres_link, group_id) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Photos WHERE id=%s)", (group["group_photo"]["thumb_link"], group_photo_id, group["group_photo"]["photo_link"], group["group_photo"]["highres_link"], group["id"], group_photo_id))
-
             con.commit()
-
 
 if __name__ == "__main__":
 
@@ -113,7 +107,7 @@ if __name__ == "__main__":
         cursor = con.cursor()
 
         setup_database(con, cursor)
-        write_categories(con, cursor)
+        write_groups(con, cursor)
 
     except psycopg2.DatabaseError, e:
 
