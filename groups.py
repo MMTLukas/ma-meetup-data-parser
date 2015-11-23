@@ -8,7 +8,7 @@ import config
 
 def setup_database(con, cursor):
 
-    cursor.execute("DROP TABLE IF EXISTS Photos CASCADE")
+    cursor.execute("DROP TABLE IF EXISTS Group_Photos CASCADE")
     cursor.execute("DROP TABLE IF EXISTS Groups_Topics")
     cursor.execute("DROP TABLE IF EXISTS Groups CASCADE")
     cursor.execute("DROP TABLE IF EXISTS Categories")
@@ -47,8 +47,8 @@ def setup_database(con, cursor):
                     topic_id INT,\
                     FOREIGN KEY (topic_id) REFERENCES Topics(id) ON DELETE CASCADE\
                    )")
-    cursor.execute("CREATE TABLE Photos(\
-                    id INT PRIMARY KEY,\
+    cursor.execute("CREATE TABLE Group_Photos(\
+                    photo_id INT PRIMARY KEY,\
                     group_id INT,\
                     FOREIGN KEY (group_id) REFERENCES Groups(id) ON DELETE CASCADE,\
                     thumb_link VARCHAR(127),\
@@ -58,7 +58,7 @@ def setup_database(con, cursor):
 
     con.commit()
 
-def write_categories(con, cursor):
+def write_groups(con, cursor):
 
     counter = 1;
     file_count = len(os.listdir('./data/categories_and_groups/'))
@@ -95,7 +95,7 @@ def write_categories(con, cursor):
                 # Update photos
                 if "group_photo" in group:
                     group_photo_id = group["group_photo"]["photo_id"]
-                    cursor.execute("INSERT INTO Photos(thumb_link, id, photo_link, highres_link, group_id) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Photos WHERE id=%s)", (group["group_photo"]["thumb_link"], group_photo_id, group["group_photo"]["photo_link"], group["group_photo"]["highres_link"], group["id"], group_photo_id))
+                    cursor.execute("INSERT INTO Group_Photos(thumb_link, photo_id, photo_link, highres_link, group_id) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Group_Photos WHERE id=%s)", (group["group_photo"]["thumb_link"], group_photo_id, group["group_photo"]["photo_link"], group["group_photo"]["highres_link"], group["id"], group_photo_id))
 
             con.commit()
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         cursor = con.cursor()
 
         setup_database(con, cursor)
-        write_categories(con, cursor)
+        write_groups(con, cursor)
 
     except psycopg2.DatabaseError, e:
 
