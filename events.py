@@ -27,7 +27,7 @@ def setup_database(con, cursor):
                    waitlist_count INT,\
                    headcount INT,\
                    maybe_rsvp_count INT,\
-                   id VARCHAR(32) PRIMARY KEY,\
+                   id INT PRIMARY KEY,\
                    name VARCHAR(256)\
                    )")
 
@@ -52,6 +52,12 @@ def write_events(con, cursor):
                                "name"]:
 					if not attrubute in event:
 						event[attrubute] = ""
+
+
+
+                if not event["id"].isdigit():
+                    continue
+
 
 
                 cursor.execute("INSERT INTO Events(\
@@ -87,9 +93,9 @@ def write_events(con, cursor):
                                                                       event["waitlist_count"],\
                                                                       event["headcount"],\
                                                                       event["maybe_rsvp_count"],\
-                                                                      str(event["id"]),\
+                                                                      int(event["id"]),\
                                                                       event["name"],\
-                                                                      str(event["id"])))
+                                                                      int(event["id"])))
 
 
             con.commit()
