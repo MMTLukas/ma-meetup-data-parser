@@ -10,15 +10,8 @@ import config
 def setup_database(con, cursor):
 
     cursor.execute("DROP TABLE IF EXISTS RSVPS CASCADE")
-    cursor.execute("DROP TABLE IF EXISTS Events")
     cursor.execute("DROP TABLE IF EXISTS Venues")
 
-    cursor.execute("CREATE TABLE Events(\
-                    id VARCHAR(32) PRIMARY KEY,\
-                    event_url VARCHAR(255),\
-                    name VARCHAR(255),\
-                    time BIGINT\
-                   )")
 
     cursor.execute("CREATE TABLE Venues(\
                     city VARCHAR(64),\
@@ -30,16 +23,16 @@ def setup_database(con, cursor):
                     address_1 VARCHAR(255),\
                     country VARCHAR(8),\
                     lat FLOAT,\
-                    id VARCHAR(32) PRIMARY KEY\
+                    id INT PRIMARY KEY\
                    )")
 
     cursor.execute("CREATE TABLE RSVPS(\
                     group_id INT,\
                     FOREIGN KEY (group_id) REFERENCES Groups(id) ON DELETE CASCADE,\
-                    venue_id VARCHAR(32),\
+                    venue_id INT,\
                     FOREIGN KEY (venue_id) REFERENCES Venues(id) ON DELETE CASCADE,\
                     created BIGINT,\
-                    id VARCHAR(32) PRIMARY KEY,\
+                    id INT PRIMARY KEY,\
                     mtime BIGINT,\
                     response VARCHAR(8),\
                     member_id INT,\
@@ -47,11 +40,12 @@ def setup_database(con, cursor):
                     guest INT,\
                     photo_id INT,\
                     FOREIGN KEY (photo_id) REFERENCES Photos(id) ON DELETE SET NULL,\
-                    event_id VARCHAR(32),\
+                    event_id INT,\
                     FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE\
                    )")
 
     con.commit()
+
 
 def write_rsvps(con, cursor):
 
@@ -71,6 +65,11 @@ def write_rsvps(con, cursor):
 
                 for rsvp in rsvps:
 
+                    event = rsvp["event"]
+
+                    if not event["id"].isdigit():
+                        continue
+
                     # Todo Tallies?!
 
                     # Update member
@@ -84,6 +83,7 @@ def write_rsvps(con, cursor):
                     # Update venue
                     if "venue" in rsvp:
                         venue = rsvp["venue"]
+
                         for attribute in ["zip", "state", "city", "name", "address_1", "country"]:
                             if not attribute in venue:
                                 venue[attribute] = None
@@ -101,7 +101,6 @@ def write_rsvps(con, cursor):
                         photo = {"photo_id": None}
 
                     # Update event
-                    event = rsvp["event"]
                     cursor.execute("INSERT INTO Events(event_url, id, name, time) SELECT %s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Events WHERE id=%s)", (event["event_url"], event["id"], event["name"], event["time"], event["id"]))
 
                     # Insert RSVPS
