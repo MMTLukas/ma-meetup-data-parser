@@ -8,7 +8,6 @@ import config
 
 def setup_database(con, cursor):
 
-    cursor.execute("DROP TABLE IF EXISTS Photos CASCADE")
     cursor.execute("DROP TABLE IF EXISTS Groups_Topics")
     cursor.execute("DROP TABLE IF EXISTS Groups CASCADE")
     cursor.execute("DROP TABLE IF EXISTS Categories")
@@ -39,21 +38,17 @@ def setup_database(con, cursor):
                     organizer_id INT,\
                     FOREIGN KEY (organizer_id) REFERENCES Members(id),\
                     id INT PRIMARY KEY,\
-                    name VARCHAR(255)\
+                    name VARCHAR(255),\
+                    photo_id INT,\
+                    thumb_link VARCHAR(127),\
+                    photo_link VARCHAR(127),\
+                    highres_link VARCHAR(127)\
                    )")
     cursor.execute("CREATE TABLE Groups_Topics(\
                     group_id INT,\
                     FOREIGN KEY (group_id) REFERENCES Groups(id) ON DELETE CASCADE,\
                     topic_id INT,\
                     FOREIGN KEY (topic_id) REFERENCES Topics(id) ON DELETE CASCADE\
-                   )")
-    cursor.execute("CREATE TABLE Photos(\
-                    id INT PRIMARY KEY,\
-                    group_id INT,\
-                    FOREIGN KEY (group_id) REFERENCES Groups(id) ON DELETE CASCADE,\
-                    thumb_link VARCHAR(127),\
-                    photo_link VARCHAR(127),\
-                    highres_link VARCHAR(127)\
                    )")
 
     con.commit()
@@ -62,6 +57,8 @@ def write_categories(con, cursor):
 
     counter = 1;
     file_count = len(os.listdir('./data/categories_and_groups/'))
+
+    group_photo = {}
 
     for file_name in os.listdir('./data/categories_and_groups/'):
 
@@ -72,6 +69,15 @@ def write_categories(con, cursor):
             data = json.load(data_file)
 
             for group in data:
+
+                if "group_photo" in group:
+                    if not "highres_link" in group["group_photo"]:
+                        group["group_photo"]["highres_link"] = ""
+                    for attribute in ["photo_id", "thumb_link", "photo_link", "highres_link"]:
+                        group_photo[attribute] = group["group_photo"][attribute]
+                else:
+                    for attribute in ["photo_id", "thumb_link", "photo_link", "highres_link"]:
+                        group_photo[attribute] = None
 
                 # Update categories
                 category_id = group["category"]["id"]
@@ -85,7 +91,7 @@ def write_categories(con, cursor):
                     group["description"] = ""
 
                 # Update groups
-                cursor.execute("INSERT INTO Groups(category_id, city, rating, description, join_mode, country, who, lon, visibility, created, state, link, members, urlname, lat, timezone, organizer_id, id, name) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (category_id, group["city"], group["rating"], group["description"], group["join_mode"], group["country"], group["who"], group["lon"], group["visibility"], group["created"], group["state"], group["link"], group["members"], group["urlname"], group["lat"], group["timezone"], organizer_id, group["id"], group["name"]))
+                cursor.execute("INSERT INTO Groups(category_id, city, rating, description, join_mode, country, who, lon, visibility, created, state, link, members, urlname, lat, timezone, organizer_id, id, name, photo_id, thumb_link, photo_link, highres_link) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (category_id, group["city"], group["rating"], group["description"], group["join_mode"], group["country"], group["who"], group["lon"], group["visibility"], group["created"], group["state"], group["link"], group["members"], group["urlname"], group["lat"], group["timezone"], organizer_id, group["id"], group["name"], group_photo["photo_id"], group_photo["thumb_link"], group_photo["photo_link"], group_photo["highres_link"]))
 
                 # Update topics
                 for topic in group["topics"]:
@@ -93,9 +99,9 @@ def write_categories(con, cursor):
                     cursor.execute("INSERT INTO Groups_Topics(group_id, topic_id) VALUES(%s, %s)", (group["id"], topic["id"]))
 
                 # Update photos
-                if "group_photo" in group:
-                    group_photo_id = group["group_photo"]["photo_id"]
-                    cursor.execute("INSERT INTO Photos(thumb_link, id, photo_link, highres_link, group_id) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Photos WHERE id=%s)", (group["group_photo"]["thumb_link"], group_photo_id, group["group_photo"]["photo_link"], group["group_photo"]["highres_link"], group["id"], group_photo_id))
+                # if "group_photo" in group:
+                #     group_photo_id = group["group_photo"]["photo_id"]
+                #     cursor.execute("INSERT INTO Photos(thumb_link, id, photo_link, highres_link, group_id) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Photos WHERE id=%s)", (group["group_photo"]["thumb_link"], group_photo_id, group["group_photo"]["photo_link"], group["group_photo"]["highres_link"], group["id"], group_photo_id))
 
             con.commit()
 

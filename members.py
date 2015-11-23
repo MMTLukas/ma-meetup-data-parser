@@ -10,7 +10,6 @@ def setup_database(con, cursor):
 
 	cursor.execute("DROP TABLE IF EXISTS Members CASCADE")
 	cursor.execute("DROP TABLE IF EXISTS Members_Topics")
-	cursor.execute("DROP TABLE IF EXISTS Member_Photos")
 	cursor.execute("DROP TABLE IF EXISTS Topics CASCADE")
 
 	cursor.execute("CREATE TABLE Members(\
@@ -30,7 +29,11 @@ def setup_database(con, cursor):
 				lat NUMERIC,\
 				visited BIGINT,\
 				country VARCHAR(8),\
-				id INT PRIMARY KEY\
+				id INT PRIMARY KEY,\
+				photo_id INT,\
+	            thumb_link VARCHAR(127),\
+	            photo_link VARCHAR(127),\
+	            highres_link VARCHAR(127)\
 	           )")
 	cursor.execute("CREATE TABLE Topics(\
 	            id INT PRIMARY KEY,\
@@ -43,14 +46,6 @@ def setup_database(con, cursor):
 	            topic_id INT,\
 	            FOREIGN KEY (topic_id) REFERENCES Topics(id) ON DELETE CASCADE\
 	           )")
-	cursor.execute("CREATE TABLE Member_Photos(\
-	            photo_id INT PRIMARY KEY,\
-	            member_id INT,\
-	            FOREIGN KEY (member_id) REFERENCES Members(id) ON DELETE CASCADE,\
-	            thumb_link VARCHAR(127),\
-	            photo_link VARCHAR(127),\
-	            highres_link VARCHAR(127)\
-	           )")
 
 	con.commit()
 
@@ -59,6 +54,7 @@ def write_members(con, cursor):
 	counter = 1;
 	file_count = len(os.listdir('./data/members_updated/'))
 	member_services = {}
+	member_photo = {}
 
 	for file_name in os.listdir('./data/members_updated/'):
 		
@@ -70,18 +66,27 @@ def write_members(con, cursor):
 
 			for member in data:
 				# check missing values
-				for attrubute in ["state", "bio", "country", "hometown", "city"]:
-					if not attrubute in member:
-						member[attrubute] = ""
+				for attribute in ["state", "bio", "country", "hometown", "city"]:
+					if not attribute in member:
+						member[attribute] = ""
 
 				# check missing social services
 				for service in ["tumblr", "twitter", "flickr", "facebook"]:
 					if service in member["other_services"]:
 						member_services[service] = member["other_services"][service]["identifier"]
 					else:
-						member_services[service] = ""
+						member_services[service] = None
 
-                # Update members
+				if "photo" in member:
+					if not "highres_link" in member["photo"]:
+						member["photo"]["highres_link"] = ""
+					for attribute in ["photo_id", "thumb_link", "photo_link", "highres_link"]:
+						member_photo[attribute] = member["photo"][attribute]
+				else:
+					for attribute in ["photo_id", "thumb_link", "photo_link", "highres_link"]:
+						member_photo[attribute] = None
+
+
 				cursor.execute("INSERT INTO Members(\
 					status,\
 					city,\
@@ -99,8 +104,12 @@ def write_members(con, cursor):
 					lat,\
 					visited,\
 					country,\
-					id\
-					) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s \
+					id,\
+					photo_id,\
+					thumb_link,\
+					photo_link,\
+					highres_link\
+					) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s \
 					WHERE NOT EXISTS(SELECT id FROM members WHERE id = %s)",(
 						member["status"],
 						member["city"],
@@ -119,6 +128,10 @@ def write_members(con, cursor):
 						member["visited"],
 						member["country"],
 						member["id"],
+						member_photo["photo_id"],
+						member_photo["thumb_link"],
+						member_photo["photo_link"],
+						member_photo["highres_link"],
 						member["id"]
 						))
 
@@ -130,24 +143,24 @@ def write_members(con, cursor):
 
 
                 # Update photos
-				if "photo" in member:
-					if not "highres_link" in member["photo"]:
-						member["photo"]["highres_link"] = ""
-					cursor.execute("INSERT INTO Member_Photos(\
-					        	photo_id,\
-					            member_id,\
-					            thumb_link,\
-					            photo_link,\
-					            highres_link\
-					            ) SELECT %s, %s, %s, %s, %s \
-								WHERE NOT EXISTS(SELECT photo_id FROM Member_Photos WHERE photo_id = %s)", (\
-					            member["photo"]["photo_id"],\
-					            member["id"],\
-					            member["photo"]["thumb_link"],\
-					            member["photo"]["photo_link"],\
-					            member["photo"]["highres_link"],\
-					            member["photo"]["photo_id"]\
-					            ))
+                # if "photo" in member:
+					# if not "highres_link" in member["photo"]:
+					# 	member["photo"]["highres_link"] = ""
+					# cursor.execute("INSERT INTO Member_Photos(\
+					#         	photo_id,\
+					#             member_id,\
+					#             thumb_link,\
+					#             photo_link,\
+					#             highres_link\
+					#             ) SELECT %s, %s, %s, %s, %s \
+					# 			WHERE NOT EXISTS(SELECT photo_id FROM Member_Photos WHERE photo_id = %s)", (\
+					#             member["photo"]["photo_id"],\
+					#             member["id"],\
+					#             member["photo"]["thumb_link"],\
+					#             member["photo"]["photo_link"],\
+					#             member["photo"]["highres_link"],\
+					#             member["photo"]["photo_id"]\
+					#             ))
 
 				con.commit()
 
