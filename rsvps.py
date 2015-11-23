@@ -9,39 +9,16 @@ import config
 
 def setup_database(con, cursor):
 
-    cursor.execute("DROP TABLE IF EXISTS RSVPS CASCADE")
-    cursor.execute("DROP TABLE IF EXISTS Venues")
+    cursor.execute("DROP TABLE IF EXISTS Events_Members")
 
-
-    cursor.execute("CREATE TABLE Venues(\
-                    city VARCHAR(64),\
-                    name VARCHAR(255),\
-                    zip VARCHAR(32),\
-                    repinned BOOLEAN,\
-                    lon FLOAT,\
-                    state VARCHAR(8),\
-                    address_1 VARCHAR(255),\
-                    country VARCHAR(8),\
-                    lat FLOAT,\
-                    id INT PRIMARY KEY\
-                   )")
-
-    cursor.execute("CREATE TABLE RSVPS(\
-                    group_id INT,\
-                    FOREIGN KEY (group_id) REFERENCES Groups(id) ON DELETE CASCADE,\
-                    venue_id INT,\
-                    FOREIGN KEY (venue_id) REFERENCES Venues(id) ON DELETE CASCADE,\
-                    created BIGINT,\
-                    id INT PRIMARY KEY,\
-                    mtime BIGINT,\
-                    response VARCHAR(8),\
+    cursor.execute("CREATE TABLE Events_Members(\
+                    event_id INT,\
+                    FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE,\
                     member_id INT,\
                     FOREIGN KEY (member_id) REFERENCES Members(id) ON DELETE CASCADE,\
-                    guest INT,\
-                    photo_id INT,\
-                    FOREIGN KEY (photo_id) REFERENCES Photos(id) ON DELETE SET NULL,\
-                    event_id INT,\
-                    FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE\
+                    mtime BIGINT,\
+                    response VARCHAR(8),\
+                    created BIGINT\
                    )")
 
     con.commit()
@@ -70,34 +47,31 @@ def write_rsvps(con, cursor):
                     if not event["id"].isdigit():
                         continue
 
-                    # Todo Tallies?!
-
                     # Update member
                     member = rsvp["member"]
                     cursor.execute("INSERT INTO Members(name, id) SELECT %s,%s WHERE NOT EXISTS (SELECT id FROM Members WHERE id=%s)", (member["name"], int(member["member_id"]), member["member_id"]))
 
-                    # Update group
-                    group = rsvp["group"]
-                    cursor.execute("INSERT INTO Groups(urlname, lon, id, lat, join_mode) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Groups WHERE id=%s)", (group["urlname"], group["group_lon"], group["id"], group["group_lat"], group["join_mode"], group["id"]))
-
-                    # Update venue
-                    if "venue" in rsvp:
-                        venue = rsvp["venue"]
-
-                        for attribute in ["zip", "state", "city", "name", "address_1", "country"]:
-                            if not attribute in venue:
-                                venue[attribute] = None
-                        cursor.execute("INSERT INTO Venues(city, name, zip, repinned, lon, state, address_1, country, lat, id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Venues WHERE id=%s)", (venue["city"], venue["name"], venue["zip"], venue["repinned"], venue["lon"], venue["state"], venue["address_1"], venue["country"], venue["lat"], str(venue["id"]), str(venue["id"])))
-                    else:
-                        venue = {"id": None}
-
                     # Update event
                     cursor.execute("INSERT INTO Events(event_url, id, name, time) SELECT %s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Events WHERE id=%s)", (event["event_url"], event["id"], event["name"], event["time"], event["id"]))
 
-                    # Insert RSVPS
+                    # Insert Events_Members
                     if not "guest" in rsvp:
                         rsvp["guest"] = None
-                    cursor.execute("INSERT INTO RSVPS(group_id, venue_id, created, id, mtime, response, member_id, guest, photo_id, event_id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM RSVPS WHERE id=%s)", (group["id"], venue["id"], rsvp["created"], rsvp["rsvp_id"], rsvp["mtime"], rsvp["response"], member["member_id"], rsvp["guest"], photo["photo_id"], event["id"], str(rsvp["rsvp_id"])))
+                    cursor.execute("INSERT INTO Events_Members(\
+                        event_id,\
+                        member_id,\
+                        mtime,\
+                        response,\
+                        created\
+                        ) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT event_id, member_id FROM Events_Members WHERE event_id=%s AND member_id=%s)", (
+                        event["id"], 
+                        member["member_id"],  
+                        rsvp["mtime"], 
+                        rsvp["response"], 
+                        rsvp["created"],
+                        str(event["id"]),
+                        str(member["member_id"])
+                        ))
 
                 con.commit()
 
