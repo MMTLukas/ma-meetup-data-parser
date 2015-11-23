@@ -91,15 +91,6 @@ def write_rsvps(con, cursor):
                     else:
                         venue = {"id": None}
 
-                    # Update photo
-                    if "member_photo" in rsvp:
-                        photo = rsvp["member_photo"]
-                        if not "highres_link" in photo:
-                            photo["highres_link"] = ""
-                        cursor.execute("INSERT INTO Photos(thumb_link, id, photo_link, highres_link) SELECT %s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Photos WHERE id=%s)", (photo["thumb_link"], photo["photo_id"], photo["photo_link"], photo["highres_link"], photo["photo_id"]))
-                    else:
-                        photo = {"photo_id": None}
-
                     # Update event
                     cursor.execute("INSERT INTO Events(event_url, id, name, time) SELECT %s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Events WHERE id=%s)", (event["event_url"], event["id"], event["name"], event["time"], event["id"]))
 
