@@ -38,8 +38,6 @@ def setup_database(con, cursor):
                     member_id INT,\
                     FOREIGN KEY (member_id) REFERENCES Members(id) ON DELETE CASCADE,\
                     guest INT,\
-                    photo_id INT,\
-                    FOREIGN KEY (photo_id) REFERENCES Photos(id) ON DELETE SET NULL,\
                     event_id INT,\
                     FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE\
                    )")
@@ -66,11 +64,8 @@ def write_rsvps(con, cursor):
                 for rsvp in rsvps:
 
                     event = rsvp["event"]
-
                     if not event["id"].isdigit():
                         continue
-
-                    # Todo Tallies?!
 
                     # Update member
                     member = rsvp["member"]
