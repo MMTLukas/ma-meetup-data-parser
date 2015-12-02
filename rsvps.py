@@ -62,14 +62,12 @@ def write_rsvps(con, cursor):
                         mtime,\
                         response,\
                         created\
-                        ) SELECT %s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT event_id, member_id FROM Events_Members WHERE event_id=%s AND member_id=%s)", (
+                        ) VALUES (%s, %s, %s, %s, %s)", (
                         event["id"], 
                         member["member_id"],  
                         rsvp["mtime"], 
                         rsvp["response"], 
-                        rsvp["created"],
-                        str(event["id"]),
-                        str(member["member_id"])
+                        rsvp["created"]
                         ))
 
                 con.commit()

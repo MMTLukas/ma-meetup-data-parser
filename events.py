@@ -8,7 +8,10 @@ import zipfile
 import config
 
 def setup_database(con, cursor):
-    cursor.execute("DROP TABLE IF EXISTS Events")
+    cursor.execute("DROP TABLE IF EXISTS Events CASCADE")
+    cursor.execute("DROP TABLE IF EXISTS Venues CASCADE")
+    cursor.execute("DROP TABLE IF EXISTS Events_Groups")
+    cursor.execute("DROP TABLE IF EXISTS Events_Venues")
 
     cursor.execute("CREATE TABLE Events(\
                    status VARCHAR(16),\
@@ -17,7 +20,6 @@ def setup_database(con, cursor):
                    utc_offset INT,\
                    event_url VARCHAR(256),\
                    group_id INT,\
-                   FOREIGN KEY(group_id) REFERENCES Groups(id),\
                    description TEXT,\
                    created BIGINT,\
                    updated BIGINT,\
@@ -30,6 +32,33 @@ def setup_database(con, cursor):
                    id INT PRIMARY KEY,\
                    name VARCHAR(256)\
                    )")
+
+    cursor.execute("CREATE TABLE Venues(\
+                    city VARCHAR(64),\
+                    name VARCHAR(255),\
+                    zip VARCHAR(32),\
+                    repinned BOOLEAN,\
+                    lon FLOAT,\
+                    state VARCHAR(8),\
+                    address_1 VARCHAR(255),\
+                    country VARCHAR(8),\
+                    lat FLOAT,\
+                    id INT PRIMARY KEY\
+                   )")
+
+    cursor.execute("CREATE TABLE Events_Groups(\
+                    event_id INT,\
+                    FOREIGN KEY(event_id) REFERENCES Events(id) ON DELETE CASCADE,\
+                    group_id INT,\
+                    FOREIGN KEY(group_id) REFERENCES Groups(id) ON DELETE CASCADE\
+                    )")
+
+    cursor.execute("CREATE TABLE Events_Venues(\
+                    event_id INT,\
+                    FOREIGN KEY(event_id) REFERENCES Events(id) ON DELETE CASCADE,\
+                    venue_id INT,\
+                    FOREIGN KEY(venue_id) REFERENCES Venues(id) ON DELETE CASCADE\
+                    )")
 
     con.commit()
 
@@ -58,15 +87,12 @@ def write_events(con, cursor):
                 if not event["id"].isdigit():
                     continue
 
-
-
                 cursor.execute("INSERT INTO Events(\
                                status,\
                                rating_count,\
                                rating_average,\
                                utc_offset,\
                                event_url,\
-                               group_id,\
                                description,\
                                created,\
                                updated,\
@@ -77,13 +103,12 @@ def write_events(con, cursor):
                                headcount,\
                                maybe_rsvp_count,\
                                id,\
-                               name) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS\
+                               name) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS\
                                (SELECT id FROM Events WHERE id=%s)", (event["status"],\
                                                                       event["rating"]["count"],\
                                                                       event["rating"]["average"],\
                                                                       event["utc_offset"],\
                                                                       event["event_url"],\
-                                                                      event["group"]["id"],\
                                                                       event["description"],\
                                                                       event["created"],\
                                                                       event["updated"],\
@@ -96,6 +121,31 @@ def write_events(con, cursor):
                                                                       int(event["id"]),\
                                                                       event["name"],\
                                                                       int(event["id"])))
+
+                if "venue" not in event:
+                    continue
+
+                # Update venue
+                if "venue" in event:
+                    venue = event["venue"]
+
+                    for attribute in ["zip", "state", "city", "name", "address_1", "country"]:
+                        if not attribute in venue:
+                            venue[attribute] = None
+                    cursor.execute("INSERT INTO Venues(city, name, zip, repinned, lon, state, address_1, country, lat, id) SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s WHERE NOT EXISTS (SELECT id FROM Venues WHERE id=%s)", (venue["city"], venue["name"], venue["zip"], venue["repinned"], venue["lon"], venue["state"], venue["address_1"], venue["country"], venue["lat"], str(venue["id"]), str(venue["id"])))
+                else:
+                    venue = {"id": None}
+
+
+
+
+                cursor.execute("INSERT INTO Events_Groups(\
+                               event_id,\
+                               group_id) VALUES(%s, %s)", (int(event["id"]), event["group"]["id"]))
+
+                cursor.execute("INSERT INTO Events_Venues(\
+                               event_id,\
+                               venue_id) VALUES(%s, %s)", (int(event["id"]), event["venue"]["id"]))
 
 
             con.commit()

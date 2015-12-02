@@ -15,9 +15,6 @@ def export_tables(con, cursor):
         table = re.sub(r'[^\w]', '', str(table))
         print "Exporting " + table + " to ./data/export/" + table + ".csv"
 
-        if table != "groups_categories":
-            continue
-
         with open("./data/export/" + table + ".csv", "w") as data_file:
             cursor.copy_expert("COPY " + table + " TO STDOUT WITH CSV HEADER", data_file)
 
