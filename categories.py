@@ -106,7 +106,7 @@ if __name__ == "__main__":
         con = psycopg2.connect(database=config.db, user=config.user, password=config.password, host=config.host)
         cursor = con.cursor()
 
-        #setup_database(con, cursor)
+        setup_database(con, cursor)
         write_categories(con, cursor)
 
     except psycopg2.DatabaseError, e:
