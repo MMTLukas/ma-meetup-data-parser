@@ -26,7 +26,7 @@ def setup_database(con, cursor):
 
 def write_rsvps(con, cursor):
 
-    counter = 1;
+    counter = 1
     file_count = len(os.listdir('./data/rsvps/'))
 
     for zip_files in os.listdir('./data/rsvps/'):
