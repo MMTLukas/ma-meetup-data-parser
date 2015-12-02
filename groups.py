@@ -59,7 +59,7 @@ def setup_database(con, cursor):
 
 
 def write_groups(con, cursor):
-    counter = 1;
+    counter = 1
     file_count = len(os.listdir('./data/categories_and_groups/'))
 
     group_photo = {}
