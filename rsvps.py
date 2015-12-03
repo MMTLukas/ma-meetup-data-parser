@@ -9,9 +9,9 @@ import config
 
 def setup_database(con, cursor):
 
-    cursor.execute("DROP TABLE IF EXISTS Events_Members")
+    cursor.execute("DROP TABLE IF EXISTS RSVPS")
 
-    cursor.execute("CREATE TABLE Events_Members(\
+    cursor.execute("CREATE TABLE RSVPS(\
                     event_id INT,\
                     FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE,\
                     member_id INT,\
@@ -56,7 +56,8 @@ def write_rsvps(con, cursor):
                     # Insert Events_Members
                     if not "guest" in rsvp:
                         rsvp["guest"] = None
-                    cursor.execute("INSERT INTO Events_Members(\
+
+                    cursor.execute("INSERT INTO RSVPS(\
                         event_id,\
                         member_id,\
                         mtime,\
